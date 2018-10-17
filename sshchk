@@ -1,0 +1,48 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+OUTFILE=$2_ssh_check_$1.txt
+
+if [ $# -ne 2 ]; then
+        echo "Usage: $CMDNAME ip port" 1>&2
+        exit 1
+fi
+echo -e "******** LoginCheck  ********"
+echo -e "ssh -l root -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $1 -p $2"
+#ssh -vvv -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $1 -p $2 >> $OUTFILE 2>&1
+
+expect -c "
+set time 10
+spawn ssh -l root -vvv $1 -p $2 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+expect \"root@$1's password:\"
+send \"root123\n\"
+" > $OUTFILE 2>&1
+echo -e "root123\r\n" >>$OUTFILE
+sed -i "/$1/d" /root/.ssh/known_hosts
+
+HMAC=`cat $OUTFILE | grep "first_kex_follows" -m 1 -A 10 | uniq | sed -n 6p| sed -e 's/debug2: kex_parse_kexinit: //g'`
+echo $HMAC | sed -e 's/,/\r\n/g' | grep -e 96 -e md5 -e sha1 > $2_ssh_hmac_$1.txt
+echo -e "\r\n\r\n#### Solution ####\r\n" >> $2_ssh_hmac_$1.txt
+solHMAC=`echo $HMAC | sed -e 's/,/\r\n/g' | grep -v -e 96 -e md5 -e sha1 | perl -pe 's/\r\n/,/g' | sed -e 's/,$//'`
+echo "MACs $solHMAC" >> $2_ssh_hmac_$1.txt
+
+CIPHERS=`cat $OUTFILE | grep "first_kex_follows" -m 1 -A 10 | uniq | sed -n 5p | sed -e 's/debug2: kex_parse_kexinit: //g'`
+echo $CIPHERS | sed -e 's/,/\r\n/g' | grep -e arcfour -e 3des > $2_ssh_ciphers_$1.txt
+echo -e "\r\n\r\n#### Solution ####\r\n" >> $2_ssh_ciphers_$1.txt
+solCIPHERS=`echo $CIPHERS | sed -e 's/,/\r\n/g' | grep -v -e arcfour -e cbc -e 3des | perl -pe 's/\r\n/,/g' | sed -e 's/,$//'`
+echo "Ciphers $solCIPHERS" >> $2_ssh_ciphers_$1.txt
+
+CBC=`cat $OUTFILE | grep "first_kex_follows" -m 1 -A 10 | uniq | sed -n 5p | sed -e 's/debug2: kex_parse_kexinit: //g'`
+echo $CBC | sed -e 's/,/\r\n/g' | grep -e cbc > $2_ssh_cbc_$1.txt
+echo -e "\r\n\r\n#### Solution ####\r\n" >> $2_ssh_cbc_$1.txt
+solCBC=`echo $CBC | sed -e 's/,/\r\n/g' | grep -v -e arcfour -e cbc| perl -pe 's/\r\n/,/g' | sed -e 's/,$//'`
+echo "Ciphers $solCBC" >> $2_ssh_cbc_$1.txt
+
+LOGJAM=`cat $OUTFILE | grep "first_kex_follows" -m 1 -A 10 | uniq | sed -n 3p | sed -e 's/debug2: kex_parse_kexinit: //g'`
+echo $LOGJAM | sed -e 's/,/\r\n/g' | grep -e diffie-hellman-group1-sha1 -e diffie-hellman-group-exchange-sha1 -e diffie-hellman-group-exchange-sha256 > $2_ssh_logjam_$1.txt
+echo -e "\r\n\r\n#### Solution ####\r\n" >> $2_ssh_logjam_$1.txt
+solLOGJAM=`echo $LOGJAM | sed -e 's/,/\r\n/g' | grep -v -e diffie-hellman-group1-sha1 -e diffie-hellman-group-exchange-sha1 -e diffie-hellman-group-exchange-sha256 | perl -pe 's/\r\n/,/g' | sed -e 's/,$//'`
+echo "KexAlgorithms $solLOGJAM" >> $2_ssh_logjam_$1.txt
+
+/usr/local/bin/ssh-v1 $1 $2 2>&1
+exit

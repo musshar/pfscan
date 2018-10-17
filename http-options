@@ -1,0 +1,62 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+LOGPATH=./log/
+#OUTFILE=$LOGPATH$RESULT
+#TARGET="tracetest.html"
+if [ $# -ne 3 ]; then
+    echo "#### Error ####"
+    echo "Usage: $CMDNAME {ipaddress} {port} [http or https]" 1>&2
+    echo "Example: $CMDNAME 192.168.1.1 443 https"
+    exit 1
+fi
+
+if [ ! -d $LOGPATH ]; then
+    mkdir $LOGPATH
+fi
+
+if [ $3 = "http" ]; then
+    COMMAND="nc $1 $2"
+    CURL="curl -isk -X OPTIONS http://$1:$2/$TARGET"
+    RESULT="$2_http_options_$1_`date "+%Y%m%d%H%M"`.txt"
+    OUTFILE=$LOGPATH$RESULT
+fi
+
+if [ $3 = "https" ]; then
+    COMMAND="openssl s_client -connect $1:$2"
+    CURL="curl -isk -X OPTIONS https://$1:$2/$TARGET"
+    RESULT="$2_https_options_$1_`date "+%Y%m%d%H%M"`.txt"
+    OUTFILE=$LOGPATH$RESULT
+fi
+
+HDR1="User-Agent: Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)"
+HDR2="Connection: close"
+
+echo 
+echo -e "\r\n\r\n********* OPTIONS1 curl command ********" > $OUTFILE 2>&1
+echo -e "# $CURL" >> $OUTFILE 2>&1 
+$CURL >> $OUTFILE | echo 2>&1 
+
+echo -e "\r\n\r\n********* OPTIONS2  HTTP/1.1 ********" >> $OUTFILE 2>&1
+echo -e "# $COMMAND\r\nOPTIONS / HTTP/1.1\r\nHost: $1\r\n$HDR1\r\n$HDR2\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "OPTIONS / HTTP/1.1\r\nHost: $1\r\n$HDR1\r\n$HDR2\r\n\r\n" | $COMMAND >> $OUTFILE 2>&1
+
+
+echo -e "\r\n\r\n********* OPTIONS3 * HTTP/1.1 ********" >> $OUTFILE 2>&1
+echo -e "# $COMMAND\r\nOPTIONS * HTTP/1.1\r\nHost: $1\r\n$HDR1\r\n$HDR2\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "OPTIONS * HTTP/1.1\r\nHost: $1\r\n$HDR1\r\n$HDR2\r\n\r\n" | $COMMAND >> $OUTFILE 2>&1
+
+
+#RESPONSE1=`echo -e "TRACE /$TARGET HTTP/1.1\r\nHost: $1\r\n$HDR1\r\n$HDR2\r\n\r\n" | $COMMAND`
+#RESPONSE2=`$CURL`
+#
+#if echo "$RESPONSE2" | grep "TRACE /tracetest.html HTTP/1.1" > /dev/null; then
+#    echo "---- VULNERABLE ----" | tee $RESULT
+#    echo -e "\r\n# $CURL" >> $RESULT
+#    echo "$RESPONSE2" >> $RESULT
+#else
+#    echo "---- NOT VULNERABLE ----" | tee $RESULT
+#fi
+
+exit 
+

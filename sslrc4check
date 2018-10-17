@@ -1,0 +1,136 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+OUTFILE=$2_sslrc4_$1.txt
+STARTTLS="$3 $4"
+TIMEOUT=3
+
+cp /dev/null $OUTFILE
+
+SSL2=`openssl ciphers -v -ssl2 RC4 | awk '{print $1}'`
+SSL3=`openssl ciphers -v -ssl3 RC4 | awk '{print $1}'`
+TLS1=`openssl ciphers -v -tls1 RC4 | awk '{print $1}'`
+
+# 引数が4つまたは2つ以外のとき、エラーメッセージを表示して終了
+if [ $# -ne 4 ] && [ $# -ne 2 ]; then
+        echo -e "\r\\n#### Error ####\r\n\rCommand usage: $CMDNAME ipaddress port (-starttls pop3|smtp|imap|ftp) " 1>&2
+        exit 1
+fi
+
+# 引数が2つのとき、starttlsで接続しないopenssl接続
+# COMMAND変数にopensslコマンドを挿入
+if [ $# = 2 ]; then
+        COMMAND="openssl s_client -connect $1:$2 -servername $1"
+fi
+
+# 引数が4つのとき、starttlsで接続
+if [ $# = 4 ]; then
+        COMMAND="openssl s_client $STARTTLS -connect $1:$2 -servername $1"
+        if [ "$STARTTLS" != "-starttls pop3" ] && [ "$STARTTLS" != "-starttls smtp" ] && [ "$STARTTLS" != "-starttls imap" ] && [ "$STARTTLS" != "-starttls ftp" ]; then
+                echo "Usage: $CMDNAME ip port -starttls pop3|smtp|imap|ftp #2" 1>&2
+                exit 1
+        fi
+fi
+
+#### SSL v2 ####
+SSL2TMP=`timeout $TIMEOUT $COMMAND -ssl2 -cipher RC4 < /dev/null 2>/dev/null 2>&1`
+
+TIMEOUT_STATUS=$?
+if [ "$TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT SSLv2 ----" >> $OUTFILE
+        exit 124
+fi
+
+if echo "$SSL2TMP" | grep -q "Master-Key: ."  ; then
+    echo -e "SSLv2" >> $OUTFILE
+    
+    for var in $SSL2
+    do
+        CERT=`openssl ciphers -v -ssl2 $var | awk '{gsub(/Enc=None/,"(None)"); print$1$5}'|sed 's/Enc=[^\(]*//'`
+        $COMMAND -ssl2 -cipher $var 2>/dev/null < /dev/null  | grep -q "Master-Key: ." && echo "$CERT" >> $OUTFILE
+    done
+fi
+
+#### SSL v3 ####
+SSL3TMP=`timeout $TIMEOUT $COMMAND -ssl3 -cipher RC4 < /dev/null 2>/dev/null 2>&1`
+
+TIMEOUT_STATUS=$?
+if [ "$TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT SSLv3 ----" >> $OUTFILE
+        exit 124
+fi
+
+if echo "$SSL3TMP" | grep -q "Master-Key: ."  ; then
+    echo -e "SSLv3" >> $OUTFILE
+    
+    for var in $SSL3
+    do
+        CERT=`openssl ciphers -v -ssl3 $var | awk '{gsub(/Enc=None/,"(None)"); print$1$5}'|sed 's/Enc=[^\(]*//'`
+        $COMMAND -ssl3 -cipher $var 2>/dev/null < /dev/null  | grep -q "Master-Key: ." && echo "$CERT" >> $OUTFILE
+    done
+fi
+
+#### TLS v1 ####
+TLS1TMP=`timeout $TIMEOUT $COMMAND -tls1 -cipher RC4 < /dev/null 2>/dev/null 2>&1`
+
+TIMEOUT_STATUS=$?
+if [ "$TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT TLSv1 ----" >> $OUTFILE
+        exit 124
+fi
+
+if echo "$TLS1TMP" | grep -q "Master-Key: ."  ; then
+    echo -e "TLSv1" >> $OUTFILE
+    
+    for var in $SSL3
+    do
+        CERT=`openssl ciphers -v -tls1 $var | awk '{gsub(/Enc=None/,"(None)"); print$1$5}'|sed 's/Enc=[^\(]*//'`
+        $COMMAND -tls1 -cipher $var 2>/dev/null < /dev/null  | grep -q "Master-Key: ." && echo "$CERT" >> $OUTFILE
+    done
+fi
+
+#### TLS v1.1 ####
+TLS1_1TMP=`timeout $TIMEOUT $COMMAND -tls1_1 -cipher RC4 < /dev/null 2>/dev/null 2>&1`
+
+TIMEOUT_STATUS=$?
+if [ "$TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT TLSv1.1 ----" >> $OUTFILE
+        exit 124
+fi
+
+if echo "$TLS1_1TMP" | grep -q "Master-Key: ."  ; then
+    echo -e "TLSv1.1" >> $OUTFILE
+    
+    for var in $TLS1
+    do
+        CERT=`openssl ciphers -v -tls1 $var | awk '{gsub(/Enc=None/,"(None)"); print$1$5}'|sed 's/Enc=[^\(]*//'`
+        $COMMAND -tls1_1 -cipher $var 2>/dev/null < /dev/null  | grep -q "Master-Key: ." && echo "$CERT" >> $OUTFILE
+    done
+fi
+
+#### TLS v1.2 ####
+TLS1_2TMP=`timeout $TIMEOUT $COMMAND -tls1_2 -cipher RC4 < /dev/null 2>/dev/null 2>&1`
+
+TIMEOUT_STATUS=$?
+if [ "$TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT TLSv1.2 ----" >> $OUTFILE
+        exit 124
+fi
+
+if echo "$TLS1_2TMP" | grep -q "Master-Key: ."  ; then
+    echo -e "TLSv1.2" >> $OUTFILE
+    
+    for var in $TLS1
+    do
+        CERT=`openssl ciphers -v -tls1 $var | awk '{gsub(/Enc=None/,"(None)"); print$1$5}'|sed 's/Enc=[^\(]*//'`
+        $COMMAND -tls1_2 -cipher $var 2>/dev/null < /dev/null  | grep -q "Master-Key: ." && echo $CERT >> $OUTFILE
+    done
+fi
+
+if [ ! -s $OUTFILE ] ; then
+   echo "---- NOT VULNERABLE ----" | tee $OUTFILE
+fi
+
+exit
+
+

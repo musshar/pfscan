@@ -1,0 +1,23 @@
+#!/bin/bash
+
+IP1=`echo $1 | awk -F'.' '{print $1}'`
+PORT1=`echo $1 | awk -F'.' '{print $2}'`
+
+IP2=`printf "%x\n" $IP1`
+PORT2=`printf "%x\n" $PORT1`
+IP21=`echo $IP2 | cut -c 7-8`
+IP22=`echo $IP2 | cut -c 5-6`
+IP23=`echo $IP2 | cut -c 3-4`
+IP24=`echo $IP2 | cut -c 1-2`
+
+IP31=`printf "%d" 0x$IP21`
+IP32=`printf "%d" 0x$IP22`
+IP33=`printf "%d" 0x$IP23`
+IP34=`printf "%d" 0x$IP24`
+
+PORT21=`echo $PORT2 | cut -c 3-4`
+PORT22=`echo $PORT2 | cut -c 1-2`
+
+PORT3=`printf "%d" 0x$PORT21$PORT22`
+
+echo "$IP31.$IP32.$IP33.$IP34:$PORT3"

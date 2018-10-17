@@ -1,0 +1,17 @@
+#!/bin/bash
+
+expect -c "
+set timeout 5
+spawn nc $1 $2
+expect \"220\"
+send \"ehlo securesky-tech.com\n\"
+expect \"AUTH\"
+send \"AUTH PLAIN cm9vdAByb290AHBhc3N3b3Jk\n\"
+expect \"535\"
+send \"AUTH LOGIN\n\"
+expect \"334 VXNlcm5hbWU6\"
+send \"YWRtaW4=\n\"
+expect \"334 UGFzc3dvcmQ6\"
+send \"YWRtaW4=\n\"
+expect \"535\"
+" > $2_smtpauth.txt

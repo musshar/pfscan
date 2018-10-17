@@ -1,0 +1,17 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+
+if [ $# -ne 3 ]; then
+        echo "Usage: $CMDNAME {ip} {port} {protocol} " 1>&2
+        exit 1
+fi
+
+if [ $3 = "http" ]; then
+        nikto.pl -Display V -C all -Tuning 123457ab -host $3://$1:$2 -output $2_nikto.txt
+fi
+
+if [ $3 = "https" ]; then
+        nikto.pl -Display V -C all -Tuning 123457ab -host $3://$1:$2 -output $2_nikto.txt
+fi
+

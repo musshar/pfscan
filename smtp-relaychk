@@ -1,0 +1,94 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+OUTFILE=$2_smtprelay_$1.txt
+RCPTTO=musha@securesky-tech.com
+TARGETDOMAIN=$3
+
+if [ $# -ne 3 ]; then
+        echo "Usage: $CMDNAME ip port target_domain" 1>&2
+        exit 1
+fi
+
+echo -e "******** open relay check ********" > $OUTFILE
+echo -e "nc $1 $2" >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test1 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <test@sst.com>\r\nRCPT TO: <\"$RCPTTO\">\r\nDATA\r\nOpen_Relay_Test1\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <test@sst.com>\r\nRCPT TO: <\"$RCPTTO\">\r\nDATA\r\nOpen_Relay_Test1\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test2 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <test@sst.com>\r\nRCPT TO: <$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_2\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <test@sst.com>\r\nRCPT TO: <$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_2\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test3 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <>\r\nRCPT TO: <$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_3\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <>\r\nRCPT TO: <$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_3\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test4 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <root@localhost>\r\nRCPT TO: <$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_4\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <root@localhost>\r\nRCPT TO: <$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_4\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test5 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest>\r\nRCPT TO: <$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_5\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest>\r\nRCPT TO: <$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_5\r\n.\r\nQUIT\r\n"|nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test6 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <>\r\nRCPT TO: <$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_6\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <>\r\nRCPT TO: <$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_6\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test7 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@sst.com>\r\nRCPT TO: <$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_7\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@sst.com>\r\nRCPT TO: <$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_7\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test8 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@[$1]>\r\nRCPT TO: <$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_8\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@[$1]>\r\nRCPT TO: <$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_8\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test9 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@$TARGETDOMAIN>\r\nRCPT TO: <musha%securesky-tech.com@$TARGETDOMAIN>\r\nDATA\r\nOpen_Relay_Test_9\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@$TARGETDOMAIN>\r\nRCPT TO: <musha%securesky-tech.com@$TARGETDOMAIN>\r\nDATA\r\nOpen_Relay_Test_9\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test10 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@$TARGETDOMAIN>\r\nRCPT TO: <musha%securesky-tech.com@[$1]>\r\nDATA\r\nOpen_Relay_Test_10\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@$TARGETDOMAIN>\r\nRCPT TO: <musha%securesky-tech.com@[$1]>\r\nDATA\r\nOpen_Relay_Test_10\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test11 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@$TARGETDOMAIN>\r\nRCPT TO: <\"$RCPTTO\">\r\nDATA\r\nOpen_Relay_Test_11\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@$TARGETDOMAIN>\r\nRCPT TO: <\"$RCPTTO\">\r\nDATA\r\nOpen_Relay_Test_11\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test12 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@$TARGETDOMAIN>\r\nRCPT TO: <\"musha%securesky-tech.com\">\r\nDATA\r\nOpen_Relay_Test_12\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@$TARGETDOMAIN>\r\nRCPT TO: <\"musha%securesky-tech.com\">\r\nDATA\r\nOpen_Relay_Test_12\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test13 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@[$1]>\r\nRCPT TO: <\"$RCPTTO@$TARGETDOMAIN\">\r\nDATA\r\nOpen_Relay_Test_13\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@[$1]>\r\nRCPT TO: <\"$RCPTTO@$TARGETDOMAIN\">\r\nDATA\r\nOpen_Relay_Test_13\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test14 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@$TARGETDOMAIN>\r\nRCPT TO: <\"$RCPTTO\"@[$1]>\r\nDATA\r\nOpen_Relay_Test_14\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@$TARGETDOMAIN>\r\nRCPT TO: <\"$RCPTTO\"@[$1]>\r\nDATA\r\nOpen_Relay_Test_14\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test15 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@$TARGETDOMAIN>\r\nRCPT TO: <$RCPTTO@[$1]>\r\nDATA\r\nOpen_Relay_Test_15\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@$TARGETDOMAIN>\r\nRCPT TO: <$RCPTTO@[$1]>\r\nDATA\r\nOpen_Relay_Test_15\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test16 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@[$1]>\r\nRCPT TO: <@$TARGETDOMAIN:$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_16\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@[$1]>\r\nRCPT TO: <@$TARGETDOMAIN:$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_16\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test17 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@$TARGETDOMAIN>\r\nRCPT TO: <@[$1]:$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_17\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@$TARGETDOMAIN>\r\nRCPT TO: <@[$1]:$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_17\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test18 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@[$1]>\r\nRCPT TO: <securesky-tech.com!musha>\r\nDATA\r\nOpen_Relay_Test_18\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@[$1]>\r\nRCPT TO: <securesky-tech.com!musha>\r\nDATA\r\nOpen_Relay_Test_18\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test19 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@$TARGETDOMAIN>\r\nRCPT TO: <securesky-tech.com!musha@[$1]>\r\nDATA\r\nOpen_Relay_Test_19\r\n.\r\nQUIT\r\n" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <spamtest@$TARGETDOMAIN>\r\nRCPT TO: <securesky-tech.com!musha@[$1]>\r\nDATA\r\nOpen_Relay_Test_19\r\n.\r\nQUIT\r\n"| nc $1 $2 >> $OUTFILE
+
+echo -e "\r\n**** Open_Relay_Test20 ****" >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <postmaster@$TARGETDOMAIN>\r\nRCPT TO: <$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_20\r\n.\r\nQUIT\r\nQUIT\r\n"  >> $OUTFILE
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <postmaster@$TARGETDOMAIN>\r\nRCPT TO: <$RCPTTO>\r\nDATA\r\nOpen_Relay_Test_20\r\n.\r\nQUIT\r\nQUIT\r\n" | nc $1 $2 >> $OUTFILE

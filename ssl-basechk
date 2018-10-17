@@ -1,0 +1,111 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+
+# 引数が4つまたは2つ以外のとき、エラーメッセージを表示して終了
+if [ $# -ne 4 ] && [ $# -ne 2 ]; then
+        echo -e "\r\\n#### Error ####\r\n\rCommand usage: \r\n\t# $CMDNAME ipaddress port (-starttls pop3|smtp|imap|ftp)\r\n"
+        echo -e "Example)\r\n\t# $CMDNAME 192.168.1.1 443\r\n\t# $CMDNAME www.example.com 25 -starttls smtp\r\n"
+        exit 1
+fi
+
+if [ $# -eq 2 ]; then
+        echo yes | /usr/local/bin/testssl.sh $1:$2 > $2_testssl_$1.txt 2>&1
+        
+	nmap -sTV -Pn -n -script ssl-enum-ciphers -p $2 $1 -oN $2_nmap_ssl-enum-ciphers_$1.txt 2>&1
+        nmap -sTV -Pn -n -script ssl-heartbleed -p $2 $1 -oN $2_nmap_heartbleed_$1.txt 2>&1
+        nmap -sTV -Pn -n -script ssl-poodle -p $2 $1 -oN $2_nmap_poodle_$1.txt $1 2>&1
+
+        echo -e "# nmap -sTV -Pn -n -script ssl-ccs-injection -p $2 $1\r\n" > $2_nmap_ssl-ccs-injection_$1.txt
+        nmap -sTV -Pn -n -script ssl-ccs-injection -p $2 $1 >> $2_nmap_ssl-ccs-injection_$1.txt
+	
+	echo "# CVE-2016-2107 $1:$2" > $2_ssl-CVE-2016-2107_$1.txt 
+	/usr/local/bin/CVE-2016-2107 $1:$2 >> $2_ssl-CVE-2016-2107_$1.txt 2>&1
+
+	/usr/local/bin/ssl2check $1 $2
+	/usr/local/bin/ssl3check $1 $2
+	/usr/local/bin/tls1check $1 $2
+	/usr/local/bin/tls1_2check $1 $2
+        /usr/local/bin/sslcertcheck $1 $2
+        /usr/local/bin/sslweakciphercheck $1 $2
+	/usr/local/bin/sslciphercheck $1 $2
+        /usr/local/bin/sslrc4check $1 $2
+        /usr/local/bin/sslsweet32check $1 $2
+        /usr/local/bin/sslanull $1 $2
+        /usr/local/bin/sslenull $1 $2
+        /usr/local/bin/sslrenegocheck $1 $2
+	#/usr/local/bin/sslrenegodoscheckecho $1 $2
+	/usr/local/bin/sslrenegodoscheck $1 $2
+        /usr/local/bin/ssllogjamcheck $1 $2
+        /usr/local/bin/sslcipherordercheck $1 $2
+        /usr/local/bin/sslocspcheck $1 $2
+        /usr/local/bin/sslpoodlecheck $1 $2
+        /usr/local/bin/sslsigalgocheck $1 $2
+	/usr/local/bin/sslvaliditycheck $1 $2
+        /usr/local/bin/sslcrimecheck $1 $2
+	/usr/local/bin/sslpubkey $1 $2
+	/usr/local/bin/sslperiodcheck $1 $2
+
+	/usr/local/bin/heartbleed.sh $1 $2 > $2_sslheartbleed_$1.txt
+	/usr/local/bin/ccs-injection.sh $1 $2 > $2_ccs-injection_$1.txt 
+	echo -e "# testssl_robot.sh --robot $1:$2" > $2_sslrobot_$1.txt
+	/root/musha/testssl/testssl.sh_2.9dev/testssl_robot.sh --robot $1:$2 >> $2_sslrobot_$1.txt
+		
+	echo "Done."
+
+fi
+
+if [ $# -eq 4 ]; then
+
+        # 第3引数が "-starttls" 以外のとき、エラーメッセージを表示して終了
+        if [ $3 != -starttls ]; then
+                echo -e "\r\\n#### Error ####\r\n\rCommand usage: \r\n\t# $CMDNAME ipaddress port (-starttls pop3|smtp|imap|ftp)\r\n" 1>&2
+                echo -e "Example)\r\n\t# $CMDNAME 192.168.1.1 443\r\n\t# $CMDNAME www.example.com 25 -starttls smtp\r\n"
+                exit 1
+        fi
+
+        # 第4引数が "pop3|smtp|imap|ftp" 以外のとき、エラーメッセージを表示して終了
+        if [ $4 != pop3 ] && [ $4  != smtp ] && [ $4 != imap ] && [ $4 != ftp ]; then
+                echo -e "\r\\n#### Error ####\r\n\rCommand usage: \r\n\t# $CMDNAME ipaddress port (-starttls pop3|smtp|imap|ftp)\r\n" 1>&2
+                echo -e "Example)\r\n\t# $CMDNAME 192.168.1.1 443\r\n\t# $CMDNAME www.example.com 25 -starttls smtp\r\n"
+                exit 1
+        fi
+
+        #echo yes | /usr/local/bin/testssl.sh $1:$2 -t $4> $2_testssl.txt 2>&1
+
+	nmap -sTV -Pn -n -script ssl-enum-ciphers -p $2 $1 -oN $2_nmap_ssl-enum-ciphers_$1.txt 2>&1
+        #nmap -sTV -Pn -n -script ssl-ccs-injection -p $2 $1 -oN $2_nmap_ssl-ccs-injection_$1.txt 2>&1
+        nmap -sTV -Pn -n -script ssl-heartbleed -p $2 $1 -oN $2_nmap_heartbleed_$1.txt 2>&1
+	nmap -sTV -Pn -n -script ssl-poodle -p $2 $1 -oN $2_nmap_poodle_$1.txt 2>&1
+	
+	echo -e "# nmap -sTV -Pn -n -script ssl-ccs-injection -p $2 $1\r\n" > $2_nmap_ssl-ccs-injection_$1.txt
+	nmap -sTV -Pn -n -script ssl-ccs-injection -p $2 $1 >> $2_nmap_ssl-ccs-injection_$1.txt
+
+	/usr/local/bin/ssl2check $1 $2 $3 $4
+        /usr/local/bin/ssl3check $1 $2 $3 $4
+        /usr/local/bin/tls1check $1 $2 $3 $4
+        /usr/local/bin/tls1_2check $1 $2 $3 $4
+        /usr/local/bin/sslcertcheck $1 $2 $3 $4
+        /usr/local/bin/sslweakciphercheck $1 $2 $3 $4
+	/usr/local/bin/sslciphercheck $1 $2 $3 $4
+        /usr/local/bin/sslrc4check $1 $2 $3 $4
+        /usr/local/bin/sslsweet32check $1 $2 $3 $4
+        /usr/local/bin/sslanull $1 $2 $3 $4
+        /usr/local/bin/sslenull $1 $2 $3 $4
+        /usr/local/bin/sslrenegocheck $1 $2 $3 $4
+        /usr/local/bin/sslrenegodoscheck $1 $2 $3 $4
+	/usr/local/bin/ssllogjamcheck $1 $2 $3 $4
+	/usr/local/bin/sslcipherordercheck $1 $2 $3 $4
+	/usr/local/bin/sslocspcheck $1 $2 $3 $4
+        /usr/local/bin/sslpoodlecheck $1 $2 $3 $4 
+        /usr/local/bin/sslsigalgocheck $1 $2 $3 $4
+	/usr/local/bin/sslvaliditycheck $1 $2 $3 $4
+        /usr/local/bin/sslcrimecheck $1 $2 $3 $4
+	/usr/local/bin/sslpubkey $1 $2 $3 $4
+	/usr/local/bin/sslperiodcheck $1 $2 $3 $4
+	
+        echo -e "# testssl_robot.sh -t $4 --robot $1:$2" > $2_sslrobot_$1.txt
+        /root/musha/testssl/testssl.sh_2.9dev/testssl_robot.sh -t $4 --robot $1:$2 >> $2_sslrobot_$1.txt
+
+	echo "Done."
+fi

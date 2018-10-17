@@ -1,0 +1,85 @@
+#!/bin/bash
+
+OUTFILE=$2_ftplogin_$1.txt
+
+echo "ftp checking..."
+
+expect -c "
+set timeout 5
+spawn ftp $1 
+expect \":\"
+send \"anonymous\n\"
+expect \"Password:\"
+send \"sst@securesky-tech.com\n\"
+expect \"ftp> \"
+send \"ls -la\n\"
+send \"by\n\"
+expect \"221\"
+" > $OUTFILE
+echo -e "\r\n" >> $OUTFILE
+
+expect -c "
+set timeout 5
+spawn ftp $1
+expect \":\"
+send \"Anonymous\n\"
+expect \"Password:\"
+send \"sst@securesky-tech.com\n\"
+expect \"ftp> \"
+send \"ls -la\n\"
+send \"by\n\"
+expect \"221\"
+" >> $OUTFILE
+echo -e "\r\n" >> $OUTFILE
+
+expect -c "
+set timeout 5
+spawn ftp $1
+expect \":\"
+send \"ftp\n\"
+expect \"Password:\"
+send \"ftp\n\"
+expect \"ftp> \"
+send \"ls -la\n\"
+send \"by\n\"
+expect \"221\"
+" >> $OUTFILE
+echo -e "\r\n" >> $OUTFILE
+
+expect -c "
+set timeout 5
+spawn ftp $1
+expect \":\"
+send \"guest\n\"
+expect \"Password:\"
+send \"guest\n\"
+expect \"ftp> \"
+send \"ls -la\n\"
+send \"by\n\"
+expect \"221\"
+" >> $OUTFILE
+echo -e "\r\n" >> $OUTFILE
+
+expect -c "
+set timeout 5
+spawn ftp $1
+expect \":\"
+send \"test\n\"
+expect \"Password:\"
+send \"test\n\"
+expect \"ftp> \"
+send \"ls -la\n\"
+send \"by\n\"
+expect \"221\"
+" >> $OUTFILE
+echo -e "\r\n" >> $OUTFILE
+
+echo -e "\r\n\r\n" >> $OUTFILE
+
+echo -e "#### SSL connect check ####\r\n" >> $OUTFILE
+echo "" | openssl s_client -connect $1:$2 2>&1 >> $OUTFILE
+
+echo -e "\r\n\r\n" >> $OUTFILE
+
+echo -e "#### STARTTLS check ####\r\n" >> $OUTFILE
+echo "" | openssl s_client -connect $1:$2 2>&1 -starttls ftp >> $OUTFILE

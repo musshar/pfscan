@@ -1,0 +1,91 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+OUTFILE=$2_sslpubkey_$1.txt
+STARTTLS="$3 $4"
+TIMEOUT=1
+
+cp /dev/null $OUTFILE
+
+# 引数が4つまたは2つ以外のとき、エラーメッセージを表示して終了
+if [ $# -ne 4 ] && [ $# -ne 2 ]; then
+        echo -e "\r\\n#### Error ####\r\n\rCommand usage: $CMDNAME ipaddress port (-starttls pop3|smtp|imap|ftp) " 1>&2
+        exit 1
+fi
+
+# 引数が2つのとき、starttlsで接続しないopenssl接続
+# COMMAND変数にopensslコマンドを挿入
+if [ $# = 2 ]; then
+        COMMAND="openssl s_client -connect $1:$2 -servername $1"
+fi
+
+# 引数が4つのとき、starttlsで接続
+if [ $# = 4 ]; then
+        COMMAND="openssl s_client $STARTTLS -connect $1:$2 -servername $1"
+        if [ "$STARTTLS" != "-starttls pop3" ] && [ "$STARTTLS" != "-starttls smtp" ] && [ "$STARTTLS" != "-starttls imap" ] && [ "$STARTTLS" != "-starttls ftp" ]; then
+                echo "Usage: $CMDNAME ip port -starttls pop3|smtp|imap|ftp #2" 1>&2
+                exit 1
+        fi
+fi
+
+#function sslv3(){
+echo "********* SSLv3 ********" >> $OUTFILE
+    SSL3TMP=`timeout $TIMEOUT $COMMAND -ssl3 < /dev/null 2>/dev/null 2>&1`
+
+    TIMEOUT_STATUS=$?
+    if [ "$TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT SSLv3 ----" >> $OUTFILE
+        echo -e "\r\n" >> $OUTFILE
+        #return
+        exit 124
+    fi
+    
+    if echo "$SSL3TMP" | grep -q "Master-Key: ."  ; then
+        pubkey=`$COMMAND -ssl3 < /dev/null 2>/dev/null | openssl x509 -text -noout | grep Public-Key:`    
+        pubkeylength=`echo $pubkey | sed -e 's/^[^0-9]*//g' -e 's/ bit)//g'`
+    
+        if [ $pubkeylength -lt 2048 ] ; then
+            echo -e "# $COMMAND -ssl3 < /dev/null 2>/dev/null | openssl x509 -text -noout | grep Public-Key:" >> $OUTFILE
+            echo -e "$pubkey\r\n" >> $OUTFILE
+        else
+            echo -e "---- NOT VULNERABLE ----" >> $OUTFILE
+        fi
+    else
+        #return
+        echo "ssl3 is not supported." >> $OUTFILE
+    fi
+#}
+
+#function tlsv1(){
+
+
+
+
+
+
+echo "********* TLSv1 ********" >> $OUTFILE
+TLS1TMP=`timeout $TIMEOUT $COMMAND -tls1 < /dev/null 2>/dev/null 2>&1`
+    TIMEOUT_STATUS=$?
+    if [ "$TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT tlsv1 ----" >> $OUTFILE
+        echo -e "\r\n" >> $OUTFILE
+        #return
+        exit 124
+    fi
+
+    if echo "$TLS1TMP" | grep -q "Master-Key: ."  ; then
+        pubkey=`$COMMAND -tls1 < /dev/null 2>/dev/null | openssl x509 -text -noout | grep Public-Key:`
+        pubkeylength=`echo $pubkey | sed -e 's/^[^0-9]*//g' -e 's/ bit)//g'`
+
+        if [ $pubkeylength -lt 2048 ] ; then
+            echo -e "# $COMMAND -tls1 < /dev/null 2>/dev/null | openssl x509 -text -noout | grep Public-Key:" >> $OUTFILE
+            echo -e "$pubkey\r\n" >> $OUTFILE
+        else
+            echo -e "---- NOT VULNERABLE ----" >> $OUTFILE
+        fi
+    else
+        #return
+        echo "tls1 is not supported." >> $OUTFILE
+    fi
+
+

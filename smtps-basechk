@@ -1,0 +1,57 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+OUTFILE=$2_smtpbasecheck_$1.txt
+
+if [ $# -ne 2 ]; then
+        echo "Usage: $CMDNAME ip port" 1>&2
+        exit 1
+fi
+
+echo -e "******** Base check ********" > $OUTFILE 2>&1
+echo -e "openssl s_client -quiet -connect $1:$2 2>/dev/null" >> $OUTFILE 2>&1
+
+echo -e "\r\n**** HELO ****" >> $OUTFILE 2>&1
+echo -e "HELO securesky-tech.com\r\n" >> $OUTFILE 2>&1
+echo -e "HELO securesky-tech.com\r"| openssl s_client -quiet -connect $1:$2 2>/dev/null >> $OUTFILE 2>&1
+
+echo -e "\r\n**** EHLO ****" >> $OUTFILE 2>&1
+echo -e "EHLO securesky-tech.com\r\n" >> $OUTFILE 2>&1
+echo -e "EHLO securesky-tech.com\r" | openssl s_client -quiet -connect $1:$2 2>/dev/null >> $OUTFILE 2>&1
+
+echo -e "\r\n**** HELP ****" >> $OUTFILE 2>&1
+echo -e "HELP\r\n" >> $OUTFILE 2>&1
+echo -e "EHLO securesky-tech.com\r\nHELP\r"| openssl s_client -quiet -connect $1:$2 2>/dev/null >> $OUTFILE 2>&1
+
+echo -e "\r\n**** EXPN ****" >> $OUTFILE 2>&1
+echo -e "EXPN root@localhost\r\n" >> $OUTFILE 2>&1
+echo -e "EHLO securesky-tech.com\r\nEXPN root@localhost\r"| openssl s_client -quiet -connect $1:$2 2>/dev/null >> $OUTFILE 2>&1
+
+echo -e "\r\n**** VRFY ****" >> $OUTFILE 2>&1
+echo -e "VRFY root@localhost\r\n" >> $OUTFILE 2>&1
+echo -e "EHLO securesky-tech.com\r\nVRFY root@localhost\r"| openssl s_client -quiet -connect $1:$2 2>/dev/null >> $OUTFILE 2>&1
+
+echo -e "\r\n**** RCPT TO: ****" >> $OUTFILE 2>&1
+echo -e "RCPT TO: root\r\n" >> $OUTFILE 2>&1
+echo -e "EHLO securesky-tech.com\r\nmail from: sst-webtest1@securesky-tech.com\r\nrcpt to: root\r\nrcpt to: admin\r\nrcpt to: www\r\nquit\r\n"| openssl s_client -quiet -connect $1:$2 2>/dev/null >> $OUTFILE 2>&1
+
+echo -e "\r\n**** AUTH PLAIN ****" >> $OUTFILE 2>&1
+echo -e "AUTH PLAIN cm9vdAByb290AHBhc3N3b3Jk\r\n" >> $OUTFILE 2>&1
+echo -e "EHLO securesky-tech.com\r\nAUTH PLAIN cm9vdAByb290AHBhc3N3b3Jk\r\nquit\r\n"| openssl s_client -quiet -connect $1:$2 2>/dev/null >> $OUTFILE 2>&1
+
+echo -e "\r\n**** AUTH LOGIN ****" >> $OUTFILE 2>&1
+echo -e "AUTH LOGIN\r\n" >> $OUTFILE 2>&1
+echo -e "EHLO securesky-tech.com\r\nAUTH LOGIN\r\nYWRtaW4=\r\nYWRtaW4=\r\nquit\r\n"| openssl s_client -quiet -connect $1:$2 2>/dev/null >> $OUTFILE 2>&1
+
+echo -e "\r\n**** Open Relay ****" >> $OUTFILE 2>&1
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <webtest1@securesky-tech.com>\r\nRCPT TO: <sst46@securesky-tech.com>\r\nDATA\r\nB
+ase Check\r\n.\r\nQUIT\r\n" >> $OUTFILE 2>&1
+echo -e "EHLO securesky-tech.com\r\nMAIL FROM: <sst-webtest1@securesky-tech.com>\r\nRCPT TO: <sst46@securesky-tech.com>\r\nDATA\r\nBase Check\r\n.\r\nQUIT\r\n"| openssl s_client -quiet -connect $1:$2 2>/dev/null >> $OUTFILE 2>&1
+
+echo -e "\r\n**** STARTTLS ****" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -starttls smtp -connect $1:$2 2>/dev/null" >> $OUTFILE 2>&1
+openssl s_client -quiet -starttls smtp -connect $1:$2 2>/dev/null < /dev/null >> $OUTFILE 2>&1
+
+echo -e "\r\n**** SSL ****" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 2>/dev/null" >> $OUTFILE 2>&1
+openssl s_client -quiet -connect $1:$2 2>/dev/null < /dev/null >> $OUTFILE 2>&1

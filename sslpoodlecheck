@@ -1,0 +1,62 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+OUTFILE=$2_sslpoodle_$1.txt
+STARTTLS="$3 $4"
+TIMEOUT=3
+
+cp /dev/null $OUTFILE
+
+# 引数が4つまたは2つ以外のとき、エラーメッセージを表示して終了
+if [ $# -ne 4 ] && [ $# -ne 2 ]; then
+        echo -e "\r\n#### Error ####\r\nCommand usage: $CMDNAME ipaddress port (-starttls pop3|smtp|imap|ftp) " 1>&2
+        exit 1
+fi
+
+# 引数が2つのとき、starttlsで接続しないopenssl接続
+# COMMAND変数にopensslコマンドを挿入
+if [ $# = 2 ]; then
+        COMMAND="openssl s_client -connect $1:$2 -servername $1"
+fi
+
+# 引数が4つのとき、starttlsで接続
+if [ $# = 4 ]; then
+        COMMAND="openssl s_client $STARTTLS -connect $1:$2 -servername $1"
+        if [ "$STARTTLS" != "-starttls pop3" ] && [ "$STARTTLS" != "-starttls smtp" ] && [ "$STARTTLS" != "-starttls imap" ] && [ "$STARTTLS" != "-starttls ftp" ]; then
+        echo "Usage: $CMDNAME ip port -starttls pop3|smtp|imap|ftp #2" 1>&2
+        exit 1
+        fi
+fi
+
+#### SSL v3 ####
+
+SSL3=`openssl ciphers -v -ssl3 ALL:COMPLEMENTALL:@STRENGTH | grep -v RC4 | awk '{print $1}'`
+SSL3TMP=`timeout $TIMEOUT $COMMAND -ssl3 < /dev/null 2>/dev/null 2>&1`
+RC4TMP=`timeout $TIMEOUT $COMMAND -ssl3 -cipher RC4 < /dev/null 2>/dev/null 2>&1` 
+SSL3TIMEOUT_STATUS=$?
+
+if [ "$SSL3TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT SSLv3 ----" >> $OUTFILE
+        exit 124
+fi
+
+if echo "$SSL3TMP" | grep -q "Master-Key: ."  ; then
+        for var in $SSL3
+        do
+                CERT=`openssl ciphers -v -ssl3 $var | awk '{gsub(/Enc=None/,"(None)"); print$1$5}'|sed 's/Enc=[^\(]*//'`
+                $COMMAND -ssl3 -cipher $var 2>/dev/null < /dev/null  | grep -q "Master-Key: ." && echo "$CERT" >> $OUTFILE
+        done
+	# CBC モード非サポート
+	if [ ! -s $OUTFILE ]; then
+		if echo "$RC4TMP" | grep -q "Master-Key: ." ; then
+			# RC4のみサポート
+			echo -e "---- NOT VULNERABLE (RC4 ONLY SUPPORTED)  ----" >> $OUTFILE
+		fi
+	fi	
+fi
+
+if [ ! -s $OUTFILE ] ; then
+        echo -e "---- NOT VULNERABLE (SSLv3 NOT SUPPORTED) ----" >> $OUTFILE
+fi
+
+exit

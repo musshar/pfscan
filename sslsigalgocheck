@@ -1,0 +1,41 @@
+#/bin/bash
+
+CMDNAME=`basename $0`
+OUTFILE=$2_sslsigalgo_$1.txt
+STARTTLS="$3 $4"
+TIMEOUT=3 
+
+cp /dev/null $OUTFILE 
+
+# 引数が4つまたは2つ以外のとき、エラーメッセージを表示して終了
+if [ $# -ne 4 ] && [ $# -ne 2 ]; then
+        echo -e "\r\n#### Error ####\r\nCommand usage: $CMDNAME ipaddress port (-starttls pop3|smtp|imap|ftp) " 1>&2
+        exit 1
+fi
+
+# 引数が2つのとき、starttlsで接続しないopenssl接続
+# COMMAND変数にopensslコマンドを挿入
+if [ $# = 2 ]; then
+        COMMAND="openssl s_client -connect $1:$2 -servername $1"
+fi
+
+# 引数が4つのとき、starttlsで接続
+if [ $# = 4 ]; then
+        COMMAND="openssl s_client $STARTTLS -connect $1:$2 -servername $1"
+        if [ "$STARTTLS" != "-starttls pop3" ] && [ "$STARTTLS" != "-starttls smtp" ] && [ "$STARTTLS" != "-starttls imap" ] && [ "$STARTTLS" != "-starttls ftp" ]; then
+        echo "Usage: $CMDNAME ip port -starttls pop3|smtp|imap|ftp #2" 1>&2
+        exit 1
+        fi
+fi
+
+ALGO=`$COMMAND < /dev/null 2>/dev/null | openssl x509 -text -noout| grep "Signature Algorithm:" | head -1`
+
+if echo "$ALGO" | grep -q "sha1" ; then
+		echo "# $COMMAND < /dev/null 2>/dev/null | openssl x509 -text -noout| grep \"Signature Algorithm:\" | head -1" >> $OUTFILE
+		echo "$ALGO" >> $OUTFILE
+else
+   echo -e "---- NOT VULNERABLE ----\r\n\r\n" >> $OUTFILE
+   echo "$ALGO" >> $OUTFILE
+fi
+
+exit

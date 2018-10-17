@@ -1,0 +1,25 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+
+# 引数が2つ以外のとき、エラーメッセージを表示して終了
+if [ $# -ne 2 ] ; then
+        echo -e "\r\\n#### Error ####\r\n\rCommand usage: \r\n\t# $CMDNAME ipaddress port\r\n" 1>&2
+        echo -e "Example)\r\n\t# $CMDNAME www.example.com 53\r\n"
+        exit 1
+fi
+
+echo -e "# dig +short porttest.dns-oarc.net TXT @$1\r\n" > 53_cachepoisoning.txt
+dig +short porttest.dns-oarc.net TXT @$1 >> 53_cachepoisoning.txt
+
+echo -e "# dig @$1 hostname.bind chaos txt\r\n" > 53_hostnamebind.txt
+dig @$1 hostname.bind chaos txt >> 53_hostnamebind.txt
+
+echo -e "# dig @$1 version.bind chaos txt\r\n" > 53_versionbind.txt
+dig @$1 version.bind chaos txt >> 53_versionbind.txt
+
+echo -e "# dig @$1 www.securesky-tech.com\r\n" > 53_recursion.txt
+dig @$1 www.securesky-tech.com >> 53_recursion.txt
+
+echo -e "# dig @$1 axfr $2\r\n" > 53_zonetransfer_$2.txt
+dig @$1 axfr $2 >> 53_zonetransfer_$2.txt

@@ -1,0 +1,45 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+OUTFILE=$2_https_userdirenum_$1.txt
+
+if [ $# -ne 2 ]; then
+        echo "Usage: $CMDNAME ip port" 1>&2
+        exit 1
+fi
+
+echo -e "**** root ****" > $OUTFILE
+echo -e "# openssl s_client -quiet -connect $1:$2\r\nGET /~root HTTP/1.1\r\nHost: $1:$2\r\nConnection: close\r\n\r\n" >> $OUTFILE
+echo -e "GET /~root HTTP/1.1\r\nHost: $1\r\nConnection: close\r\n\r\n"|openssl s_client -quiet -connect $1:$2 >> $OUTFILE
+
+echo -e "\r\n\r\n**** admin ****" >> $OUTFILE
+echo -e "# openssl s_client -quiet -connect $1:$2\r\nGET /~admin HTTP/1.1\r\nHost: $1:$2\r\nConnection: close\r\n\r\n" >> $OUTFILE
+echo -e "GET /~admin HTTP/1.1\r\nHost: $1\r\nConnection: close\r\n\r\n"|openssl s_client -quiet -connect $1:$2 >> $OUTFILE
+
+echo -e "\r\n\r\n**** www ****" >> $OUTFILE
+echo -e "# openssl s_client -quiet -connect $1:$2\r\nGET /~www HTTP/1.1\r\nHost: $1:$2\r\nConnection: close\r\n\r\n" >> $OUTFILE
+echo -e "GET /~www HTTP/1.1\r\nHost: $1\r\nConnection: close\r\n\r\n"|openssl s_client -quiet -connect $1:$2 >> $OUTFILE
+
+echo -e "\r\n\r\n**** apache ****" >> $OUTFILE
+echo -e "# openssl s_client -quiet -connect $1:$2\r\nGET /~apache HTTP/1.1\r\nHost: $1:$2\r\nConnection: close\r\n\r\n" >> $OUTFILE
+echo -e "GET /~apache HTTP/1.1\r\nHost: $1\r\nConnection: close\r\n\r\n"|openssl s_client -quiet -connect $1:$2 >> $OUTFILE
+
+echo -e "\r\n\r\n**** postgres ****" >> $OUTFILE
+echo -e "# openssl s_client -quiet -connect $1:$2\r\nGET /~postgres HTTP/1.1\r\nHost: $1:$2\r\nConnection: close\r\n\r\n" >> $OUTFILE
+echo -e "GET /~postgres HTTP/1.1\r\nHost: $1\r\nConnection: close\r\n\r\n"|openssl s_client -quiet -connect $1:$2 >> $OUTFILE
+
+echo -e "\r\n\r\n**** mysql ****" >> $OUTFILE
+echo -e "# openssl s_client -quiet -connect $1:$2\r\nGET /~mysql HTTP/1.1\r\nHost: $1:$2\r\nConnection: close\r\n\r\n" >> $OUTFILE
+echo -e "GET /~mysql HTTP/1.1\r\nHost: $1\r\nConnection: close\r\n\r\n"|openssl s_client -quiet -connect $1:$2 >> $OUTFILE
+
+echo -e "\r\n\r\n**** operator ****" >> $OUTFILE
+echo -e "# openssl s_client -quiet -connect $1:$2\r\nGET /~operator HTTP/1.1\r\nHost: $1:$2\r\nConnection: close\r\n\r\n" >> $OUTFILE
+echo -e "GET /~operator HTTP/1.1\r\nHost: $1\r\nConnection: close\r\n\r\n"|openssl s_client -quiet -connect $1:$2 >> $OUTFILE
+
+echo -e "\r\n\r\n**** mailnull ****" >> $OUTFILE
+echo -e "# openssl s_client -quiet -connect $1:$2\r\nGET /~mailnull HTTP/1.1\r\nHost: $1:$2\r\nConnection: close\r\n\r\n" >> $OUTFILE
+echo -e "GET /~mailnull HTTP/1.1\r\nHost: $1\r\nConnection: close\r\n\r\n"|openssl s_client -quiet -connect $1:$2 >> $OUTFILE
+
+echo -e "\r\n\r\n**** smmsp ****" >> $OUTFILE
+echo -e "# openssl s_client -quiet -connect $1:$2\r\nGET /~smmsp HTTP/1.1\r\nHost: $1:$2\r\nConnection: close\r\n\r\n" >> $OUTFILE
+echo -e "GET /~smmsp HTTP/1.1\r\nHost: $1\r\nConnection: close\r\n\r\n"|openssl s_client -quiet -connect $1:$2 >> $OUTFILE

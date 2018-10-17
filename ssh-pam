@@ -1,0 +1,16 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+OUTFILE=$2_ssh_pam_$1.txt
+
+if [ $# -ne 2 ]; then
+        echo "Usage: $CMDNAME ip port" 1>&2
+        exit 1
+fi
+echo "# time ssh -l root $1 -p $2 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"  > $OUTFILE 2>&1
+(time ssh -l root $1 -p $2 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null) >> $OUTFILE 2>&1
+echo "# time ssh -l aaaaa $1 -p $2 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"  >> $OUTFILE 2>&1
+(time ssh -l aaaaa $1 -p $2 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null) >> $OUTFILE 2>&1
+
+
+exit

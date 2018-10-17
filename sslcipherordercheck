@@ -1,0 +1,246 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+OUTFILE=$2_sslcipherorder_$1.txt
+STARTTLS="$3 $4"
+SSL3CIPHERLIST=`openssl ciphers -v -ssl3 ALL:COMPLEMENTOFALL:@STRENGTH | grep -v TLSv1.2 | awk '{print $1}'`
+TLS1CIPHERLIST=`openssl ciphers -v -tls1 ALL:COMPLEMENTOFALL:@STRENGTH | awk '{print $1}'`
+CIPHERLIST=`openssl ciphers -v ALL:COMPLEMENTOFALL:@STRENGTH | awk '{print $1}'`
+TIMEOUT=3
+
+cp /dev/null $OUTFILE
+
+# 引数が4つまたは2つ以外のとき、エラーメッセージを表示して終了
+if [ $# -ne 4 ] && [ $# -ne 2 ]; then
+        echo -e "\r\\n#### Error ####\r\n\rCommand usage: $CMDNAME ipaddress port (-starttls pop3|smtp|imap|ftp) #1" 1>&2
+        exit 1
+fi
+
+# 引数が2つのとき、starttlsで接続しないopenssl接続
+# COMMAND変数にopensslコマンドを挿入
+if [ $# = 2 ]; then
+        COMMAND="openssl s_client -connect $1:$2 -servername $1"  
+fi
+
+# 引数が4つのとき、starttlsで接続
+if [ $# = 4 ]; then
+        COMMAND="openssl s_client $STARTTLS -connect $1:$2 -servername $1"
+        if [ "$STARTTLS" != "-starttls pop3" ] && [ "$STARTTLS" != "-starttls smtp" ] && [ "$STARTTLS" != "-starttls imap" ] && [ "$STARTTLS" != "-starttls ftp" ]; then
+                echo "Usage: $CMDNAME ip port -starttls pop3|smtp|imap|ftp #2" 1>&2
+                exit 1
+        fi
+fi
+
+#### General ####
+CERT=()
+TMP=`timeout $TIMEOUT $COMMAND < /dev/null 2>/dev/null`
+
+TIMEOUT_STATUS=$?
+if [ "$TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT ----" >> $OUTFILE
+        exit 124
+fi
+
+if echo "$TMP" | grep -q "Master-Key: ."  ; then
+    for var in $CIPHERLIST
+    do
+        $COMMAND -cipher $var 2>/dev/null < /dev/null | grep -q "Master-Key: ." && CERT+=("$var")
+    done
+
+    FIRSTCIPHER=${CERT[0]}
+    LASTCIPHER=${CERT[((${#CERT[@]}-1))]}
+
+    CIPHER1=${FIRSTCIPHER}:$LASTCIPHER
+    CIPHER2=${LASTCIPHER}:$FIRSTCIPHER
+
+    CIPHERTMP1=`$COMMAND -cipher $CIPHER1 </dev/null 2>/dev/null`
+    CIPHERTMP2=`$COMMAND -cipher $CIPHER2 </dev/null 2>/dev/null`
+
+    CIPHERTMP11=`echo "$CIPHERTMP1" | grep "Cipher    :" | sed -e 's/^[ ]*//g'`
+    CIPHERTMP22=`echo "$CIPHERTMP2" | grep "Cipher    :" | sed -e 's/^[ ]*//g'`
+
+    if test "$CIPHERTMP11" = "$CIPHERTMP22"; then
+        echo -e "\r\n---- NOT VULNERABLE ----\r\n" >> $OUTFILE
+        echo -e "# $COMMAND -cipher $CIPHER1" >> $OUTFILE    
+        echo -e "# $COMMAND -cipher $CIPHER2" >> $OUTFILE
+        echo -e "" >> $OUTFILE
+        echo "First $CIPHERTMP11" >> $OUTFILE
+        echo "Second $CIPHERTMP22" >> $OUTFILE
+        echo -e "\r\n" >> $OUTFILE
+    else
+        echo -e "# $COMMAND -cipher $CIPHER1" >> $OUTFILE
+        echo -e "CONNECTED(00000003)\r\n～ 省略 ～\r\n---" >> $OUTFILE
+        echo -e "$CIPHERTMP1" | grep -A 10000 "New, " | grep -B 10000 "    Cipher    :" >> $OUTFILE
+        echo -e "～ 省略 ～\r\n" >> $OUTFILE
+        echo -e "# $COMMAND -cipher $CIPHER2" >> $OUTFILE
+        echo -e "CONNECTED(00000003)\r\n～ 省略 ～\r\n---" >> $OUTFILE
+        echo -e "$CIPHERTMP2" | grep -A 10000 "New, " | grep -B 10000 "    Cipher    :" >> $OUTFILE
+        echo -e "～ 省略 ～\r\n" >> $OUTFILE
+    fi
+fi
+
+#### SSL v3 ####
+CERT=()
+SSL3TMP=`timeout $TIMEOUT $COMMAND -ssl3 < /dev/null 2>/dev/null`
+
+TIMEOUT_STATUS=$?
+if [ "$TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT SSLv3 ----" >> $OUTFILE
+        exit 124
+fi
+
+if echo "$SSL3TMP" | grep -q "Master-Key: ."  ; then 
+    echo -e "#### SSL v3 ####" >> $OUTFILE
+
+    for var in $SSL3CIPHERLIST
+    do
+	$COMMAND -ssl3 -cipher $var 2>/dev/null < /dev/null | grep -q "Master-Key: ." && CERT+=("$var")
+    done
+
+    FIRSTCIPHER=${CERT[0]}
+    LASTCIPHER=${CERT[((${#CERT[@]}-1))]}
+ 
+    CIPHER1=${FIRSTCIPHER}:$LASTCIPHER
+    CIPHER2=${LASTCIPHER}:$FIRSTCIPHER
+
+    SSL3CIPHERTMP1=`$COMMAND -ssl3 -cipher $CIPHER1 </dev/null 2>/dev/null`
+    SSL3CIPHERTMP2=`$COMMAND -ssl3 -cipher $CIPHER2 </dev/null 2>/dev/null`
+
+    SSL3CIPHER1=`echo "$SSL3CIPHERTMP1" | grep "Cipher    :" | sed -e 's/^[ ]*//g'`
+    SSL3CIPHER2=`echo "$SSL3CIPHERTMP2" | grep "Cipher    :" | sed -e 's/^[ ]*//g'`
+    
+    if test "$SSL3CIPHER1" = "$SSL3CIPHER2"; then
+        echo -e "\r\n---- NOT VULNERABLE SSLv3 ----\r\n" >> $OUTFILE
+    fi
+        echo -e "# $COMMAND -cipher $CIPHER1" >> $OUTFILE
+        echo -e "# $COMMAND -cipher $CIPHER2" >> $OUTFILE
+        echo -e "" >> $OUTFILE
+        echo "First $SSL3CIPHER1" >> $OUTFILE
+        echo "Second $SSL3CIPHER2" >> $OUTFILE
+        echo -e "\r\n" >> $OUTFILE
+fi
+
+#### TLS v1 ####
+CERT=()
+TLS1TMP=`timeout $TIMEOUT $COMMAND -tls1 < /dev/null 2>/dev/null`
+
+TIMEOUT_STATUS=$?
+if [ "$TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT TLSv1 ----" >> $OUTFILE
+        exit 124
+fi
+
+if echo "$TLS1TMP" | grep -q "Master-Key: ."  ; then
+    echo -e "#### TLS v1 ####" >> $OUTFILE
+
+    for var in $TLS1CIPHERLIST
+    do
+        $COMMAND -tls1 -cipher $var 2>/dev/null < /dev/null | grep -q "Master-Key: ." && CERT+=("$var")
+    done
+    
+    FIRSTCIPHER=${CERT[0]}
+    LASTCIPHER=${CERT[((${#CERT[@]}-1))]}
+    
+    CIPHER1=${FIRSTCIPHER}:$LASTCIPHER
+    CIPHER2=${LASTCIPHER}:$FIRSTCIPHER
+
+    TLS1CIPHERTMP1=`$COMMAND -tls1 -cipher $CIPHER1 </dev/null 2>/dev/null`
+    TLS1CIPHERTMP2=`$COMMAND -tls1 -cipher $CIPHER2 </dev/null 2>/dev/null`
+
+    TLS1CIPHER1=`echo "$TLS1CIPHERTMP1" | grep "Cipher    :" | sed -e 's/^[ ]*//g'`
+    TLS1CIPHER2=`echo "$TLS1CIPHERTMP2" | grep "Cipher    :" | sed -e 's/^[ ]*//g'`
+
+    if test "$TLS1CIPHER1" = "$TLS1CIPHER2"; then
+        echo -e "\r\n---- NOT VULNERABLE TLSv1 ----\r\n" >> $OUTFILE
+    fi
+        echo -e "# $COMMAND -cipher $CIPHER1" >> $OUTFILE
+        echo -e "# $COMMAND -cipher $CIPHER2" >> $OUTFILE
+        echo -e "" >> $OUTFILE
+        echo "First $TLS1CIPHER1" >> $OUTFILE
+        echo "Second $TLS1CIPHER2" >> $OUTFILE
+        echo -e "\r\n" >> $OUTFILE
+fi
+
+#### TLS v1.1 ####
+CERT=()
+TLS1_1TMP=`timeout $TIMEOUT $COMMAND -tls1_1 < /dev/null 2>/dev/null`
+
+TIMEOUT_STATUS=$?
+if [ "$TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT TLSv1.1 ----" >> $OUTFILE
+        exit 124
+fi
+
+if echo "$TLS1_1TMP" | grep -q "Master-Key: ."  ; then
+    echo -e "#### TLS v1.1 ####" >> $OUTFILE
+
+    for var in $TLS1CIPHERLIST
+    do
+        $COMMAND -tls1_1 -cipher $var 2>/dev/null < /dev/null | grep -q "Master-Key: ." && CERT+=("$var")
+    done
+
+    FIRSTCIPHER=${CERT[0]}
+    LASTCIPHER=${CERT[((${#CERT[@]}-1))]}
+ 
+    CIPHER1=${FIRSTCIPHER}:$LASTCIPHER
+    CIPHER2=${LASTCIPHER}:$FIRSTCIPHER
+
+    TLS1_1CIPHERTMP1=`$COMMAND -tls1_1 -cipher $CIPHER1 </dev/null 2>/dev/null`
+    TLS1_1CIPHERTMP2=`$COMMAND -tls1_1 -cipher $CIPHER2 </dev/null 2>/dev/null`
+
+    TLS1_1CIPHER1=`echo "$TLS1_1CIPHERTMP1" | grep "Cipher    :" | sed -e 's/^[ ]*//g'`
+    TLS1_1CIPHER2=`echo "$TLS1_1CIPHERTMP2" | grep "Cipher    :" | sed -e 's/^[ ]*//g'`
+    
+    if test "$TLS1_1CIPHER1" = "$TLS1_1CIPHER2"; then
+        echo -e "\r\n---- NOT VULNERABLE TLSv1.1  ----\r\n" >> $OUTFILE
+    fi
+        echo -e "# $COMMAND -cipher $CIPHER1" >> $OUTFILE
+        echo -e "# $COMMAND -cipher $CIPHER2" >> $OUTFILE
+        echo -e "" >> $OUTFILE 
+        echo "First $TLS1_1CIPHER1" >> $OUTFILE
+        echo "Second $TLS1_1CIPHER2" >> $OUTFILE
+        echo -e "\r\n" >> $OUTFILE
+fi
+
+
+#### TLS v1.2 ####
+CERT=()
+TLS1_2TMP=`timeout $TIMEOUT $COMMAND -tls1_2 < /dev/null 2>/dev/null`
+
+TIMEOUT_STATUS=$?
+if [ "$TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT TLSv1.2 ----" >> $OUTFILE
+        exit 124
+fi
+
+if echo "$TLS1_2TMP" | grep -q "Master-Key: ."  ; then
+    echo -e "#### TLS v1.2 ####" >> $OUTFILE
+    for var in $TLS1CIPHERLIST
+    do
+        $COMMAND -tls1_2 -cipher $var 2>/dev/null < /dev/null | grep -q "Master-Key: ." && CERT+=("$var")
+    done
+    
+    FIRSTCIPHER=${CERT[0]}
+    LASTCIPHER=${CERT[((${#CERT[@]}-1))]}
+    
+    CIPHER1=${FIRSTCIPHER}:$LASTCIPHER
+    CIPHER2=${LASTCIPHER}:$FIRSTCIPHER
+    
+    TLS1_2CIPHERTMP1=`$COMMAND -tls1_2 -cipher $CIPHER1 </dev/null 2>/dev/null`
+    TLS1_2CIPHERTMP2=`$COMMAND -tls1_2 -cipher $CIPHER2 </dev/null 2>/dev/null`
+    
+    TLS1_2CIPHER1=`echo "$TLS1_2CIPHERTMP1" | grep "Cipher    :" | sed -e 's/^[ ]*//g'`
+    TLS1_2CIPHER2=`echo "$TLS1_2CIPHERTMP2" | grep "Cipher    :" | sed -e 's/^[ ]*//g'`
+    
+    if test "$TLS1_2CIPHER1" = "$TLS1_2CIPHER2"; then
+        echo -e "\r\n---- NOT VULNERABLE TLSv1.2 ----\r\n" >> $OUTFILE
+    fi
+        echo -e "# $COMMAND -cipher $CIPHER1" >> $OUTFILE
+        echo -e "# $COMMAND -cipher $CIPHER2" >> $OUTFILE
+        echo -e "" >> $OUTFILE 
+        echo "First $TLS1_2CIPHER1" >> $OUTFILE
+        echo "Second $TLS1_2CIPHER2" >> $OUTFILE
+        echo -e "\r\n" >> $OUTFILE
+fi
+
+exit

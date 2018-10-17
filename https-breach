@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo "# curl -H \"Accept-Encoding: gzip, deflate, zlib\" -Isk https://$1:$2/" > $2_https_breach_$1.txt
+# curl -H "Accept-Encoding: gzip, deflate, zlib" -Isk https://$1:$2 >> $2_https_breach_$1.txt
+curl -H "Accept-Encoding: gzip,deflate,zlib,compress" -A "Mozilla/5.0 (X11; Linux x86_64; rv:42.0) Gecko/19700101 Firefox/42.0" -isk https://$1:$2 >> $2_https_breach_$1.txt

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+nmap -sU -T4 -Pn -n -v --max-retries 1 -oN nmap_udp_$1_5000_`date "+%Y%m%d%H%M"`.txt -p -5000 $1
+nmap -sU -T4 -Pn -n -v --max-retries 1 -oN nmap_udp_$1_10000_`date "+%Y%m%d%H%M"`.txt -p 5001-10000 $1
+nmap -sU -T4 -Pn -n -v --max-retries 1 -oN nmap_udp_$1_15000_`date "+%Y%m%d%H%M"`.txt -p 10001-15000 $1
+nmap -sU -T4 -Pn -n -v --max-retries 1 -oN nmap_udp_$1_20000_`date "+%Y%m%d%H%M"`.txt -p 15001-20000 $1
+nmap -sU -T4 -Pn -n -v --max-retries 1 -oN nmap_udp_$1_25000_`date "+%Y%m%d%H%M"`.txt -p 20001-25000 $1
+nmap -sU -T4 -Pn -n -v --max-retries 1 -oN nmap_udp_$1_30000_`date "+%Y%m%d%H%M"`.txt -p 25001-30000 $1
+nmap -sU -T4 -Pn -n -v --max-retries 1 -oN nmap_udp_$1_35000_`date "+%Y%m%d%H%M"`.txt -p 30001-35000 $1
+nmap -sU -T4 -Pn -n -v --max-retries 1 -oN nmap_udp_$1_40000_`date "+%Y%m%d%H%M"`.txt -p 35001-40000 $1
+nmap -sU -T4 -Pn -n -v --max-retries 1 -oN nmap_udp_$1_45000_`date "+%Y%m%d%H%M"`.txt -p 40001-45000 $1
+nmap -sU -T4 -Pn -n -v --max-retries 1 -oN nmap_udp_$1_50000_`date "+%Y%m%d%H%M"`.txt -p 45001-50000 $1
+nmap -sU -T4 -Pn -n -v --max-retries 1 -oN nmap_udp_$1_55000_`date "+%Y%m%d%H%M"`.txt -p 50001-55000 $1
+nmap -sU -T4 -Pn -n -v --max-retries 1 -oN nmap_udp_$1_60000_`date "+%Y%m%d%H%M"`.txt -p 55001-60000 $1
+nmap -sU -T4 -Pn -n -v --max-retries 1 -oN nmap_udp_$1_65535_`date "+%Y%m%d%H%M"`.txt -p 60001- $1
+

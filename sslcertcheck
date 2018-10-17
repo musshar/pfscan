@@ -1,0 +1,13 @@
+#!/bin/bash
+
+openssl s_client -status -showcerts $3 $4 -connect $1:$2 -servername $1 < /dev/null > $2_sslsession_$1.txt 2>&1
+#openssl s_client -status $3 $4 -connect $1:$2 < /dev/null > $2_sslsession_$1.txt 2>&1 
+sleep 1
+
+openssl s_client $3 $4 -connect $1:$2 -servername $1 < /dev/null 2>/dev/null | openssl x509 -text -noout > $2_sslcertinfo_$1.txt 2>&1
+
+grep -A 1000 -e '-----BEGIN CERTIFICATE-----' $2_sslsession_$1.txt | grep -B 10000 -e '-----END CERTIFICATE-----' > $2_sslcert_$1.cer
+
+
+
+openssl verify -CAfile /etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt -untrusted $2_sslcert_$1.cer $2_sslcert_$1.cer

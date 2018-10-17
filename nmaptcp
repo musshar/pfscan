@@ -1,0 +1,3 @@
+#!/bin/bash
+
+nmap -n -sTV -O -Pn -script default,safe -r -v -p- -oN nmap_tcp_$1_`date "+%Y%m%d%H%M"`.txt $1

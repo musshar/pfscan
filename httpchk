@@ -1,0 +1,49 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+
+if [ $# -ne 3 ]; then
+	echo "Usage: $CMDNAME {ip} {port} {http or https} " 1>&2
+	exit 1
+fi
+
+echo "Executing nikto..."
+nikto.pl -Display V -C all -Tuning 123457ab -host $3://$1:$2 -output $2_nikto_$1.txt 2>&1
+
+echo "Checking http-trace..."
+/usr/local/bin/http-trace $1 $2 $3
+echo "Checking http-httponly..."
+/usr/local/bin/http-httponly $1 $2 $3
+echo "Checking http-options..."
+/usr/local/bin/http-options $1 $2 $3
+#echo "Checking http-expect..."
+#/usr/local/bin/http-expect $1 $2 $3
+echo "Checking http-methodxxx..."
+/usr/local/bin/http-methodxss $1 $2 $3
+
+if [ $3 = "http" ]; then
+	echo "Checking http-dirscan..."
+	/usr/local/bin/http-dirscan $1 $2
+	echo "Checking http-basechk..."
+	/usr/local/bin/http-basechk $1 $2
+	echo "Checking http-hostheaderredirect..."
+	/usr/local/bin/http-hostheaderredirect $1 $2
+	/usr/local/bin/http-userdir-enum $1 $2
+	/usr/local/bin/http-httponlycookie $1 $2
+fi
+
+if [ $3 = "https" ]; then
+	echo "Checking https-dirscan..."
+	/usr/local/bin/https-dirscan $1 $2
+	echo "Checking https-basechk..."
+	/usr/local/bin/https-basechk $1 $2
+	echo "Checking https-hostheaderredirect..."
+	/usr/local/bin/https-hostheaderredirect $1 $2
+	/usr/local/bin/https-userdir-enum $1 $2
+	/usr/local/bin/ssl-basechk $1 $2
+	/usr/local/bin/https-hsts $1 $2
+	/usr/local/bin/https-breach $1 $2 
+	/usr/local/bin/https-httponlycookie $1 $2
+fi
+
+exit

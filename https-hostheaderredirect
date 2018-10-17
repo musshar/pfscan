@@ -1,0 +1,126 @@
+#!/bin/bash
+
+# Version: 1.0.0
+# Date: 2014/05/14
+
+CMDNAME=`basename $0`
+OUTFILE=$2_https_hostheaderredirect_$1.txt
+HOST=www.securesky-tech.com
+TARGET=/
+
+if [ $# -ne 2 ]; then
+        echo "Usage: $CMDNAME ip port" 1>&2
+        exit 1
+fi
+
+echo -e "******** (1) Host Header empty HTTP/1.0 ********" > $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET $TARGET HTTP/1.0\r\nHost: \r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET $TARGET HTTP/1.0\r\nConnection: close\r\nHost: \r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (2) Host Header empty HTTP/1.1 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.1\r\nHost: \r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nConnection: close\r\nHost: \r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (3) Host Header localhost HTTP/1.0 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.0\r\nHost: localhost\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.0\r\nConnection: close\r\nHost: localhost\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (4) Host Header localhost HTTP/1.1 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.1\r\nHost: localhost\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nConnection: close\r\nHost: localhost\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (5) Host Header $HOST HTTP/1.0 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.0\r\nHost: $HOST\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.0\r\nConnection: close\r\nHost: $HOST\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (6) Host Header $HOST HTTP/1.1 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.1\r\nHost: $HOST\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nConnection: close\r\nHost: $HOST\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (7) Host Header $HOST+/ HTTP/1.0 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.0\r\nHost: $HOST/\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.0\r\nConnection: close\r\nHost: $HOST/\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (8) Host Header $HOST+/ HTTP/1.1 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.1\r\nHost: $HOST/\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nConnection: close\r\nHost: $HOST/\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (9) Host Header $HOST+? HTTP/1.0 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.0\r\nHost: $HOST?\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.0\r\nConnection: close\r\nHost: $HOST?\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (10) Host Header $HOST+? HTTP/1.1 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.1\r\nHost: $HOST?\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nConnection: close\r\nHost: $HOST?\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (11) Host Header $HOST+%23 HTTP/1.0 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.0\r\nHost: $HOST%23\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.0\r\nConnection: close\r\nHost: $HOST%23\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (12) Host Header $HOST+%23 HTTP/1.1 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.1\r\nHost: $HOST%23\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nConnection: close\r\nHost: $HOST%23\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (13) Host Header $HOST+; HTTP/1.0 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.0\r\nHost: $HOST;\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.0\r\nConnection: close\r\nHost: $HOST;\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (14) Host Header $HOST+; HTTP/1.1 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.1\r\nHost: $HOST;\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nConnection: close\r\nHost: $HOST;\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (15) Host Header $HOST+:80 HTTP/1.0 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.0\r\nHost: $HOST:80\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.0\r\nConnection: close\r\nHost: $HOST:80\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (16) Host Header $HOST+:80 HTTP/1.1 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.1\r\nHost: $HOST:80\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nConnection: close\r\nHost: $HOST:80\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (17) Host Header $HOST+\\ HTTP/1.0 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.0\r\nHost: $HOST\\ \r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.0\r\nConnection: close\r\nHost: $HOST\\ \r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (18) Host Header $HOST+\\ HTTP/1.1 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.1\r\nHost: $HOST\\ \r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nConnection: close\r\nHost: $HOST\\ \r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (19) Host Header $HOST+%00 HTTP/1.0 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.0\r\nHost: $HOST%00\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.0\r\nConnection: close\r\nHost: $HOST%00\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (20) Host Header $HOST+%00 HTTP/1.1 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.1\r\nHost: $HOST%00\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nConnection: close\r\nHost: $HOST%00\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (21) Host Header $HOST+%0D HTTP/1.0 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.0\r\nHost: $HOST%0D\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.0\r\nConnection: close\r\nHost: $HOST%0DCookie:%20a=1\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (22) Host Header $HOST+%0D HTTP/1.1 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.1\r\nHost: $HOST%0D\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nConnection: close\r\nHost: $HOST%0DCookie:%20a=1\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (23) Host Header /+$HOST HTTP/1.0 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.0\r\nHost: /$HOST\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.0\r\nConnection: close\r\nHost: /$HOST\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (24) Host Header /+$HOST HTTP/1.1 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.1\r\nHost: /$HOST\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nConnection: close\r\nHost: /$HOST\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (25) Host Header \+$HOST HTTP/1.0 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.0\r\nHost: \\$HOST\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.0\r\nConnection: close\r\nHost: \\$HOST\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (26) Host Header \+$HOST HTTP/1.1 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.1\r\nHost: \\$HOST\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nConnection: close\r\nHost: \\$HOST\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (27) Host Header %09/+$HOST HTTP/1.0 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.0\r\nHost: %09/$HOST\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.0\r\nConnection: close\r\nHost: %09/$HOST\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1
+
+echo -e "\r\n\r\n******** (28) Host Header %09/+$HOST HTTP/1.1 ********" >> $OUTFILE 2>&1
+echo -e "# openssl s_client -quiet -connect $1:$2 -servername $1\r\nGET / HTTP/1.1\r\nHost: %09/$HOST\r\n\r\n" >> $OUTFILE 2>&1
+echo -e "GET / HTTP/1.1\r\nConnection: close\r\nHost: %09/$HOST\r\n\r\n" | openssl s_client -quiet -connect $1:$2 -servername $1 >> $OUTFILE 2>&1

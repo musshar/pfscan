@@ -1,0 +1,123 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+OUTFILE=$2_ssllogjam_$1.txt
+STARTTLS="$3 $4"
+SSL3=`openssl ciphers -v -ssl3 EDH:@STRENGTH | awk '{print $1}'`
+TLS1=`openssl ciphers -v -tls1 EDH:@STRENGTH | awk '{print $1}'`
+TIMEOUT=3
+
+# 引数が4つまたは2つ以外のとき、エラーメッセージを表示して終了
+if [ $# -ne 4 ] && [ $# -ne 2 ]; then
+        echo -e "\r\\n#### Error ####\r\n\rCommand usage: $CMDNAME ipaddress port (-starttls pop3|smtp|imap|ftp) #1" 1>&2
+        exit 1
+fi
+
+# 引数が2つのとき、starttlsで接続しないopenssl接続
+# COMMAND変数にopensslコマンドを挿入
+if [ $# = 2 ]; then
+        COMMAND="openssl s_client -connect $1:$2 -servername $1"  
+fi
+
+# 引数が4つのとき、starttlsで接続
+if [ $# = 4 ]; then
+        COMMAND="openssl s_client $STARTTLS -connect $1:$2 -servername $1"
+        if [ "$STARTTLS" != "-starttls pop3" ] && [ "$STARTTLS" != "-starttls smtp" ] && [ "$STARTTLS" != "-starttls imap" ] && [ "$STARTTLS" != "-starttls ftp" ]; then
+                echo "Usage: $CMDNAME ip port -starttls pop3|smtp|imap|ftp #2" 1>&2
+                exit 1
+        fi
+fi
+
+cp /dev/null $OUTFILE 
+
+#### SSL v3 ####
+SSL3TMP=`timeout $TIMEOUT $COMMAND -ssl3 -cipher EDH < /dev/null 2>/dev/null`
+
+TIMEOUT_STATUS=$?
+if [ "$TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT SSLv3 ----" >> $OUTFILE
+        exit 124
+fi
+
+if echo "$SSL3TMP" | grep -q "Master-Key: ." ; then
+    echo -e "SSLv3" >> $OUTFILE
+
+    for var in $SSL3
+    do
+        SSL3TMP2=`$COMMAND -ssl3 -cipher $var 2>/dev/null < /dev/null`
+	CERT=`openssl ciphers -v -ssl3 $var | awk '{gsub(/Enc=None/,"(None)"); print$1$5}'|sed 's/Enc=[^\(]*//'`
+        BITS=`echo "$SSL3TMP2" | grep "Server Temp Key" | awk '{print $5}'`
+	echo "$SSL3TMP2" | grep -q "Server Temp Key" && echo -e "$CERT\\t$BITS Bits" >> $OUTFILE
+    done
+fi
+
+#### TLS v1 ####
+TLS1TMP=`timeout $TIMEOUT $COMMAND -tls1 -cipher EDH < /dev/null 2>/dev/null`
+
+TIMEOUT_STATUS=$?
+if [ "$TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT TLSv1 ----" >> $OUTFILE
+        exit 124
+fi
+
+if echo "$TLS1TMP" | grep -q "Master-Key: ." ; then
+    echo -e "TLSv1" >> $OUTFILE
+    for var in $TLS1
+    do
+        TLS1TMP2=`$COMMAND -tls1 -cipher $var 2>/dev/null < /dev/null`
+        CERT=`openssl ciphers -v -tls1 $var | awk '{gsub(/Enc=None/,"(None)"); print$1$5}'|sed 's/Enc=[^\(]*//'`
+        BITS=`echo "$TLS1TMP2" | grep "Server Temp Key" | awk '{print $5}'`
+        echo "$TLS1TMP2" | grep -q "Server Temp Key" && echo -e "$CERT\\t$BITS Bits" >> $OUTFILE
+    done
+fi
+
+#### TLS v1.1 ####
+TLS1_1TMP=`timeout $TIMEOUT $COMMAND -tls1_1 -cipher EDH < /dev/null 2>/dev/null`
+
+TIMEOUT_STATUS=$?
+if [ "$TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT TLSv1.1 ----" >> $OUTFILE
+        exit 124
+fi
+
+if echo "$TLS1_1TMP" | grep -q "Master-Key: ." ; then
+    echo -e "TLSv1.1" >> $OUTFILE
+    for var in $TLS1
+    do
+        TLS1_1TMP2=`$COMMAND -tls1_1 -cipher $var 2>/dev/null < /dev/null`
+        CERT=`openssl ciphers -v -tls1 $var | awk '{gsub(/Enc=None/,"(None)"); print$1$5}'|sed 's/Enc=[^\(]*//'`
+        BITS=`echo "$TLS1_1TMP2" | grep "Server Temp Key" | awk '{print $5}'`
+        echo "$TLS1_1TMP2" | grep -q "Server Temp Key" && echo -e "$CERT\\t$BITS Bits" >> $OUTFILE
+    done
+fi
+
+
+#### TLS v1.2 ####
+TLS1_2TMP=`timeout $TIMEOUT $COMMAND -tls1_2 -cipher EDH < /dev/null 2>/dev/null`
+
+TIMEOUT_STATUS=$?
+if [ "$TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT TLSv1.2 ----" >> $OUTFILE
+        exit 124
+fi
+
+if echo "$TLS1_2TMP" | grep -q "Master-Key: ." ; then
+    echo -e "TLSv1.2" >> $OUTFILE
+    for var in $TLS1
+    do
+        TLS1_2TMP2=`$COMMAND -tls1_2 -cipher $var 2>/dev/null < /dev/null`
+        CERT=`openssl ciphers -v -tls1 $var | awk '{gsub(/Enc=None/,"(None)"); print$1$5}'|sed 's/Enc=[^\(]*//'`
+        BITS=`echo "$TLS1_2TMP2" | grep "Server Temp Key" | awk '{print $5}'`
+        echo "$TLS1_2TMP2" | grep -q "Server Temp Key" && echo -e "$CERT\\t$BITS Bits" >> $OUTFILE
+    done
+fi
+
+if [ ! -s $OUTFILE ] ; then
+    echo "---- NOT VULNERABLE ----" >> $OUTFILE
+fi
+
+if grep -q 2048 $OUTFILE ; then
+    sed -i -e "1i ---- NOT VULNERABLE (no weak DH parameters) ----\r\n\r\n" $OUTFILE
+fi
+
+exit

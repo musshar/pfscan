@@ -1,0 +1,45 @@
+#!/bin/bash
+
+CMDNAME=`basename $0`
+OUTFILE=$2_sslperiod_$1.txt
+STARTTLS="$3 $4"
+TIMEOUT=3
+
+cp /dev/null $OUTFILE
+
+# 引数が4つまたは2つ以外のとき、エラーメッセージを表示して終了
+if [ $# -ne 4 ] && [ $# -ne 2 ]; then
+        echo -e "\r\\n#### Error ####\r\n\rCommand usage: $CMDNAME ipaddress port (-starttls pop3|smtp|imap|ftp) " 1>&2
+        exit 1
+fi
+
+# 引数が2つのとき、starttlsで接続しないopenssl接続
+# COMMAND変数にopensslコマンドを挿入
+if [ $# = 2 ]; then
+        COMMAND="openssl s_client -connect $1:$2 -servername $1"
+fi
+
+# 引数が4つのとき、starttlsで接続
+if [ $# = 4 ]; then
+        COMMAND="openssl s_client $STARTTLS -connect $1:$2 -servername $1"
+        if [ "$STARTTLS" != "-starttls pop3" ] && [ "$STARTTLS" != "-starttls smtp" ] && [ "$STARTTLS" != "-starttls imap" ] && [ "$STARTTLS" != "-starttls ftp" ]; then
+                echo "Usage: $CMDNAME ip port -starttls pop3|smtp|imap|ftp "
+                exit 1
+        fi
+fi
+
+SSLSESSION=`$COMMAND -status -showcerts < /dev/null 2>/dev/null`
+RESULT=`$COMMAND -CAfile /etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt < /dev/null 2>/dev/null |grep  "Verify return code:"`
+X509=`$COMMAND < /dev/null 2>/dev/null | openssl x509 -text -noout`
+
+if echo "$RESULT" | grep -q "Verify return code: 10 (certificate has expired)"; then 
+	echo -e "$RESULT\r\n" | sed -e 's/^    //g' >> $OUTFILE
+	echo "$X509" | grep -A 2 Validity  | sed -e 's/^        //g' >> $OUTFILE
+else
+	echo "---- NOT VULNERABLE ----" >> $OUTFILE
+	echo -e " \r\n$RESULT\r\n" | sed -e 's/^    //g' >> $OUTFILE
+	echo "$X509" | grep -A 2 Validity  | sed -e 's/^        //g' >> $OUTFILE
+fi
+
+exit
+

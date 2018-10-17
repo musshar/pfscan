@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo -e "# curl -Ik https://$1:$2/" > $2_https_hsts_$1.txt
+curl -sIk https://$1:$2/ >> $2_https_hsts_$1.txt

@@ -1,0 +1,53 @@
+#/bin/bash
+
+CMDNAME=`basename $0`
+OUTFILE=$2_sslrenegodos_$1.txt
+STARTTLS="$3 $4"
+TIMEOUT=3
+
+# 引数が4つまたは2つ以外のとき、エラーメッセージを表示して終了
+if [ $# -ne 4 ] && [ $# -ne 2 ]; then
+        echo -e "\r\\n#### Error ####\r\n\rCommand usage: $CMDNAME ipaddress port (-starttls pop3|smtp|imap|ftp) " 1>&2
+        exit 1
+fi
+
+# 引数が2つのとき、starttlsで接続しないopenssl接続
+# COMMAND変数にopensslコマンドを挿入
+if [ $# = 2 ]; then
+        COMMAND="openssl s_client -connect $1:$2 -servername $1"
+fi
+
+# 引数が4つのとき、starttlsで接続
+if [ $# = 4 ]; then
+        COMMAND="openssl s_client $STARTTLS -connect $1:$2 -servername $1"
+        if [ "$STARTTLS" != "-starttls pop3" ] && [ "$STARTTLS" != "-starttls smtp" ] && [ "$STARTTLS" != "-starttls imap" ] && [ "$STARTTLS" != "-starttls ftp" ]; then
+                echo "Usage: $CMDNAME ip port -starttls pop3|smtp|imap|ftp #2" 1>&2
+                exit 1
+        fi
+fi
+
+cp /dev/null $OUTFILE
+
+TMP=`(sleep 0.5 ; echo -e "R\r\n" ; sleep 0.5 ; echo -e "R\r\n" ; sleep 0.5 ; echo -e "R\r\n" )| timeout $TIMEOUT $COMMAND  2>&1`
+
+TIMEOUT_STATUS=$?
+if [ "$TIMEOUT_STATUS" = "124" ] ; then
+        echo "---- TIMEOUT ----" >> $OUTFILE
+        exit 124
+fi
+COUNT=`echo "$TMP"|grep -c "RENEGOTIATING"`
+
+if [ 3 -eq $COUNT ]; then
+	echo "# (sleep 0.5 ; echo -e \"R\r\n\" ; sleep 0.5 ; echo -e \"R\r\n\" ; sleep 0.5 ; echo -e \"R\r\n\" )| $COMMAND" > $OUTFILE
+	echo -e "CONNECTED(00000003)\r\n---\r\n～ 省略 ～" >> $OUTFILE
+	NT=`echo "$TMP" | grep -n "\-\-\-" | awk -F ':' '{print $1}' | tail -n 1`
+	echo "$TMP" | tail -n +$NT >> $OUTFILE
+else
+	echo "---- NOT VULNERABLE ----" > $OUTFILE
+fi
+
+echo -e "\r\n\r\n\r\n######## Row SSL Renegotiation Session ########\r\n" >> $OUTFILE
+echo "# (sleep 0.5 ; echo -e \"R\r\n\" ; sleep 0.5 ; echo -e \"R\r\n\" ; sleep 0.5 ; echo -e \"R\r\n\" )| $COMMAND" >> $OUTFILE
+echo "$TMP" >> $OUTFILE
+
+exit

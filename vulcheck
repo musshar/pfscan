@@ -1,0 +1,6 @@
+#!/bin/bash
+
+LIST=`ls -v1 *$1*`
+array=("$LIST")
+
+more ${array[0]}
