@@ -2,7 +2,7 @@
 
 CMDNAME=`basename $0`
 OUTFILE=$2_smtprelay_$1.txt
-RCPTTO=musha@securesky-tech.com
+RCPTTO=
 TARGETDOMAIN=$3
 
 if [ $# -ne 3 ]; then
