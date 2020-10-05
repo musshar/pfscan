@@ -18,8 +18,8 @@ dig @$1 hostname.bind chaos txt >> 53_hostnamebind.txt
 echo -e "# dig @$1 version.bind chaos txt\r\n" > 53_versionbind.txt
 dig @$1 version.bind chaos txt >> 53_versionbind.txt
 
-echo -e "# dig @$1 www.securesky-tech.com\r\n" > 53_recursion.txt
-dig @$1 www.securesky-tech.com >> 53_recursion.txt
+echo -e "# dig @$1 www.google.com\r\n" > 53_recursion.txt
+dig @$1 www.google.com >> 53_recursion.txt
 
 echo -e "# dig @$1 axfr $2\r\n" > 53_zonetransfer_$2.txt
 dig @$1 axfr $2 >> 53_zonetransfer_$2.txt
