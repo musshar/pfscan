@@ -5,7 +5,7 @@
 
 CMDNAME=`basename $0`
 OUTFILE=$2_http_hostheaderredirect_$1.txt
-HOST=www.securesky-tech.com
+HOST=example.com
 TARGET=/
 
 if [ $# -ne 2 ]; then
